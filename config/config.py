@@ -51,7 +51,7 @@ EXTRA_PLUGINS = getenv(
 
 EXTRA_PLUGINS_REPO = getenv(
     "EXTRA_PLUGINS_REPO",
-    "https://github.com/Youghsie/yanto.git",
+    "https://github.com/iyann1255/ytaassa.git",
 )
 # Fill here the external plugins repo where plugins that you want to load
 
@@ -87,7 +87,7 @@ HEROKU_APP_NAME = getenv("HEROKU_APP_NAME")
 # For customized or modified Repository
 UPSTREAM_REPO = getenv(
     "UPSTREAM_REPO",
-    "https://github.com/AayAzhar14/Alphaaa.git",
+    "https://github.com/iyann1255/mngajhgaf.git",
 )
 UPSTREAM_BRANCH = getenv("UPSTREAM_BRANCH", "master")
 
