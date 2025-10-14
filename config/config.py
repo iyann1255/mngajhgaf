@@ -83,13 +83,6 @@ HEROKU_API_KEY = getenv("HEROKU_API_KEY")
 # You have to Enter the app name which you gave to identify your  Music Bot in Heroku.
 HEROKU_APP_NAME = getenv("HEROKU_APP_NAME")
 
-# Auto Gcast/Broadcast Handler, Write:- [On / Off] During Hosting.
-AUTO_GCAST = os.getenv("AUTO_GCAST", "off")
-
-# Auto Broadcast Message That You Want Use In Auto Broadcast In All Groups.
-AUTO_GCAST_MSG = getenv("AUTO_GCAST_MSG", "")
-
-
 # For customized or modified Repository
 UPSTREAM_REPO = getenv(
     "UPSTREAM_REPO",
