@@ -1,4 +1,4 @@
-mport os
+import os
 from random import randint
 from typing import Union
 
