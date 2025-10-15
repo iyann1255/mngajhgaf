@@ -5,21 +5,22 @@ from typing import Union
 from pyrogram.types import InlineKeyboardMarkup
 
 import config
-from config import LOG_GROUP_ID, OWNER_ID
 from DanteMusic import Carbon, YouTube, app
 from DanteMusic.core.call import Dante
 from DanteMusic.misc import db
 from DanteMusic.utils.database import (
+    add_active_chat,
     add_active_video_chat,
     is_active_chat,
     is_video_allowed,
+    music_on,
 )
 from DanteMusic.utils.exceptions import AssistantErr
-from DanteMusic.utils.inline.play import queue_markup, stream_markup, telegram_markup
+from DanteMusic.utils.inline.play import stream_markup, queue_markup, telegram_markup
 from DanteMusic.utils.inline.playlist import close_markup
 from DanteMusic.utils.pastebin import Dantebin
 from DanteMusic.utils.stream.queue import put_queue, put_queue_index
-from DanteMusic.utils.thumbnails import gen_qthumb, gen_thumb
+from DanteMusic.utils.thumbnails import gen_thumb, gen_qthumb
 
 
 async def stream(
@@ -37,9 +38,8 @@ async def stream(
 ):
     if not result:
         return
-    if video:
-        if not await is_video_allowed(chat_id):
-            raise AssistantErr(_["play_7"])
+    if video and not await is_video_allowed(chat_id):
+        raise AssistantErr(_["play_7"])
     if forceplay:
         await Dante.force_stop_stream(chat_id)
     if streamtype == "playlist":
@@ -55,8 +55,8 @@ async def stream(
                     duration_sec,
                     thumbnail,
                     vidid,
-                ) = await YouTube.details(search, False if spotify else True)
-            except:
+                ) = await YouTube.details(search, not spotify)
+            except Exception:
                 continue
             if str(duration_min) == "None":
                 continue
@@ -87,16 +87,7 @@ async def stream(
                         vidid, mystic, video=status, videoid=True
                     )
                 except:
-                    await mystic.delete()
-                    await app.send_message(
-                        LOG_GROUP_ID,
-                        f"**ʜᴇʏ [ᴏᴡɴᴇʀ](tg://user?id={OWNER_ID[0]}) ᴍᴀʏ ʙᴇ ᴍʏ ᴄᴏᴏᴋɪᴇs ʜᴀs ʙᴇᴇɴ ᴅᴇᴀᴅ ᴘʟᴇᴀsᴇ ᴄʜᴇᴄᴋ ᴏɴᴇ ᴛɪᴍᴇ ʙʏ ᴘʟᴀʏ ᴀɴʏ sᴏɴɢs**",
-                    )
-                    return await app.send_message(
-                        OWNER_ID[0],
-                        f"**ʜᴇʏ [ᴏᴡɴᴇʀ](tg://user?id={OWNER_ID[0]}) ᴍᴀʏ ʙᴇ ᴍʏ ᴄᴏᴏᴋɪᴇs ʜᴀs ʙᴇᴇɴ ᴅᴇᴀᴅ ᴘʟᴇᴀsᴇ ᴄʜᴇᴄᴋ ᴏɴᴇ ᴛɪᴍᴇ ʙʏ ᴘʟᴀʏ ᴀɴʏ sᴏɴɢs**",
-                    )
-
+                    raise AssistantErr(_["play_16"])
                 await Dante.join_call(
                     chat_id, original_chat_id, file_path, video=status, image=thumbnail
                 )
@@ -112,6 +103,7 @@ async def stream(
                     "video" if video else "audio",
                     forceplay=forceplay,
                 )
+                # theme = await check_theme(chat_id)
                 img = await gen_thumb(vidid)
                 button = stream_markup(_, vidid, chat_id)
                 run = await app.send_photo(
@@ -129,21 +121,17 @@ async def stream(
                 db[chat_id][0]["markup"] = "stream"
         if count == 0:
             return
-        else:
-            link = await Dantebin(msg)
-            lines = msg.count("\n")
-            if lines >= 17:
-                car = os.linesep.join(msg.split(os.linesep)[:17])
-            else:
-                car = msg
-            carbon = await Carbon.generate(car, randint(100, 10000000))
-            upl = close_markup(_)
-            return await app.send_photo(
-                original_chat_id,
-                photo=carbon,
-                caption=_["playlist_18"].format(link, position),
-                reply_markup=upl,
-            )
+        link = await Dantebin(msg)
+        lines = msg.count("\n")
+        car = os.linesep.join(msg.split(os.linesep)[:17]) if lines >= 17 else msg
+        carbon = await Carbon.generate(car, randint(100, 10000000))
+        upl = close_markup(_)
+        return await app.send_photo(
+            original_chat_id,
+            photo=carbon,
+            caption=_["playlist_18"].format(position, link),
+            reply_markup=upl,
+        )
     elif streamtype == "youtube":
         link = result["link"]
         vidid = result["vidid"]
@@ -156,16 +144,7 @@ async def stream(
                 vidid, mystic, videoid=True, video=status
             )
         except:
-            await mystic.delete()
-            await app.send_message(
-                LOG_GROUP_ID,
-                f"**ʜᴇʏ [ᴏᴡɴᴇʀ](tg://user?id={OWNER_ID[0]}) ᴍᴀʏ ʙᴇ ᴍʏ ᴄᴏᴏᴋɪᴇs ʜᴀs ʙᴇᴇɴ ᴅᴇᴀᴅ ᴘʟᴇᴀsᴇ ᴄʜᴇᴄᴋ ᴏɴᴇ ᴛɪᴍᴇ ʙʏ ᴘʟᴀʏ ᴀɴʏ sᴏɴɢs**",
-            )
-            return await app.send_message(
-                OWNER_ID[0],
-                f"**ʜᴇʏ [ᴏᴡɴᴇʀ](tg://user?id={OWNER_ID[0]}) ᴍᴀʏ ʙᴇ ᴍʏ ᴄᴏᴏᴋɪᴇs ʜᴀs ʙᴇᴇɴ ᴅᴇᴀᴅ ᴘʟᴇᴀsᴇ ᴄʜᴇᴄᴋ ᴏɴᴇ ᴛɪᴍᴇ ʙʏ ᴘʟᴀʏ ᴀɴʏ sᴏɴɢs**",
-            )
-
+            raise AssistantErr(_["play_16"])
         if await is_active_chat(chat_id):
             await put_queue(
                 chat_id,
@@ -178,6 +157,7 @@ async def stream(
                 user_id,
                 "video" if video else "audio",
             )
+            # theme = await check_theme(chat_id)
             position = len(db.get(chat_id)) - 1
             qimg = await gen_qthumb(vidid)
             button = queue_markup(_, vidid, chat_id)
@@ -207,6 +187,7 @@ async def stream(
                 "video" if video else "audio",
                 forceplay=forceplay,
             )
+            # theme = await check_theme(chat_id)
             img = await gen_thumb(vidid)
             button = stream_markup(_, vidid, chat_id)
             try:
@@ -266,9 +247,7 @@ async def stream(
             run = await app.send_photo(
                 original_chat_id,
                 photo=config.SOUNCLOUD_IMG_URL,
-                caption=_["stream_1"].format(
-                    title, config.SUPPORT_GROUP, duration_min, user_name
-                ),
+                caption=_["stream_3"].format(title, duration_min, user_name),
                 reply_markup=InlineKeyboardMarkup(button),
             )
             db[chat_id][0]["mystic"] = run
@@ -318,7 +297,7 @@ async def stream(
             run = await app.send_photo(
                 original_chat_id,
                 photo=config.TELEGRAM_VIDEO_URL if video else config.TELEGRAM_AUDIO_URL,
-                caption=_["stream_1"].format(title, link, duration_min, user_name),
+                caption=_["stream_4"].format(title, link, duration_min, user_name),
                 reply_markup=InlineKeyboardMarkup(button),
             )
             db[chat_id][0]["mystic"] = run
@@ -358,7 +337,7 @@ async def stream(
                 original_chat_id,
                 file_path,
                 video=status,
-                image=thumbnail if thumbnail else None,
+                image=thumbnail or None,
             )
             await put_queue(
                 chat_id,
@@ -372,6 +351,7 @@ async def stream(
                 "video" if video else "audio",
                 forceplay=forceplay,
             )
+            # theme = await check_theme(chat_id)
             img = await gen_thumb(vidid)
             button = telegram_markup(_, chat_id)
             run = await app.send_photo(
